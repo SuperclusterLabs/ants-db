@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	ipfslite "github.com/hsanjuan/ipfs-lite"
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/query"
 	syncds "github.com/ipfs/go-datastore/sync"
@@ -61,27 +60,6 @@ func makeTestingHost(t *testing.T, opts ...Option) (*AntsDB, host.Host) {
 
 	bs := syncds.MutexWrap(datastore.NewMapDatastore())
 
-	t.Cleanup(func() {
-		fmt.Println("==START==")
-		res, err := bs.Query(context.TODO(), query.Query{KeysOnly: true})
-		if err != nil {
-			fmt.Println(err)
-		}
-		for r := range res.Next() {
-			fmt.Println("KEY", r.Entry.Key)
-		}
-		fmt.Println("==END==")
-	})
-
-	ipfs, err := ipfslite.New(
-		ctx,
-		bs,
-		rHost,
-		idht,
-		&ipfslite.Config{
-			Offline: false,
-		},
-	)
 	opts = append(opts,
 		WithRebroadcastDuration(time.Second),
 		WithOnCloseHook(func() {
@@ -93,7 +71,8 @@ func makeTestingHost(t *testing.T, opts ...Option) (*AntsDB, host.Host) {
 		}),
 	)
 	adb, err := New(
-		ipfs,
+		rHost,
+		idht,
 		psub,
 		bs,
 		opts...,
@@ -103,6 +82,24 @@ func makeTestingHost(t *testing.T, opts ...Option) (*AntsDB, host.Host) {
 		idht.Close()
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		err := adb.Clean(context.TODO())
+		if err != nil {
+			t.Fatal(err)
+		}
+		res, err := bs.Query(context.TODO(), query.Query{KeysOnly: true})
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer res.Close()
+		count := 0
+		for _ = range res.Next() {
+			count++
+		}
+		if count != 0 {
+			t.Fatal("storage not cleaned")
+		}
+	})
 	return adb, h
 }
 

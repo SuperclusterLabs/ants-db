@@ -4,10 +4,16 @@ import (
 	"context"
 	"time"
 
+	ipfslite "github.com/hsanjuan/ipfs-lite"
+	"github.com/ipfs/go-datastore"
 	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/namespace"
+	"github.com/ipfs/go-datastore/query"
 	crdt "github.com/ipfs/go-ds-crdt"
 	logging "github.com/ipfs/go-log/v2"
+	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/routing"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	multihash "github.com/multiformats/go-multihash"
 	store "github.com/plexsysio/gkvstore"
@@ -17,6 +23,7 @@ import (
 var (
 	defaultRootNs = "/ant"
 	defaultTopic  = "antWorker"
+	blocksNs      = "b"
 	log           = logging.Logger("antsdb")
 )
 
@@ -92,7 +99,8 @@ type AntsDB struct {
 }
 
 func New(
-	syncer crdt.SessionDAGSyncer,
+	host host.Host,
+	dht routing.Routing,
 	pubsub *pubsub.PubSub,
 	store ds.Batching,
 	opts ...Option,
@@ -103,7 +111,6 @@ func New(
 	adb := &AntsDB{
 		ctx:     ctx,
 		cancel:  cancel,
-		syncer:  syncer,
 		pubsub:  pubsub,
 		storage: store,
 	}
@@ -111,6 +118,24 @@ func New(
 		opt(adb)
 	}
 	defaultOpts(adb)
+
+	blocksDatastore := namespace.Wrap(store, adb.namespace.ChildString(blocksNs))
+
+	ipfs, err := ipfslite.New(
+		ctx,
+		blocksDatastore,
+		host,
+		dht,
+		&ipfslite.Config{
+			Offline: false,
+		},
+	)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
+	adb.syncer = ipfs
 	return adb, adb.setup()
 }
 
@@ -188,6 +213,31 @@ func (a *AntsDB) Close() error {
 	log.Info("Closing AntsDB")
 	for _, stop := range a.closers {
 		stop()
+	}
+	return nil
+}
+
+func (a *AntsDB) Clean(ctx context.Context) error {
+	log.Info("cleaning all antsDB data")
+	q := query.Query{
+		Prefix:   a.namespace.String(),
+		KeysOnly: true,
+	}
+
+	results, err := a.storage.Query(ctx, q)
+	if err != nil {
+		return err
+	}
+	defer results.Close()
+
+	for r := range results.Next() {
+		if r.Error != nil {
+			return r.Error
+		}
+		err := a.storage.Delete(ctx, datastore.NewKey(r.Key))
+		if err != nil {
+			log.Error(err)
+		}
 	}
 	return nil
 }

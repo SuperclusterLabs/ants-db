@@ -8,17 +8,13 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hsanjuan/ipfs-lite v1.2.0
-	github.com/ipfs/go-blockservice v0.2.1
-	github.com/ipfs/go-cid v0.1.0
 	github.com/ipfs/go-datastore v0.5.1
 	github.com/ipfs/go-ds-crdt v0.2.1
 	github.com/ipfs/go-fetcher v1.6.1 // indirect
-	github.com/ipfs/go-ipfs-blockstore v1.1.1
 	github.com/ipfs/go-ipfs-config v0.18.0 // indirect
 	github.com/ipfs/go-ipfs-files v0.0.9 // indirect
 	github.com/ipfs/go-ipns v0.1.2
 	github.com/ipfs/go-log/v2 v2.3.0
-	github.com/ipfs/go-merkledag v0.5.1
 	github.com/ipfs/go-unixfs v0.3.1 // indirect
 	github.com/ipfs/interface-go-ipfs-core v0.5.2 // indirect
 	github.com/ipld/go-ipld-prime v0.14.1 // indirect
