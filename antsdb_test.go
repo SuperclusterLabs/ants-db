@@ -10,6 +10,7 @@ import (
 
 	ipfslite "github.com/hsanjuan/ipfs-lite"
 	"github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-datastore/query"
 	syncds "github.com/ipfs/go-datastore/sync"
 	ipns "github.com/ipfs/go-ipns"
 	libp2p "github.com/libp2p/go-libp2p"
@@ -59,6 +60,18 @@ func makeTestingHost(t *testing.T, opts ...Option) (*AntsDB, host.Host) {
 	rHost := routedhost.Wrap(h, idht)
 
 	bs := syncds.MutexWrap(datastore.NewMapDatastore())
+
+	t.Cleanup(func() {
+		fmt.Println("==START==")
+		res, err := bs.Query(context.TODO(), query.Query{KeysOnly: true})
+		if err != nil {
+			fmt.Println(err)
+		}
+		for r := range res.Next() {
+			fmt.Println("KEY", r.Entry.Key)
+		}
+		fmt.Println("==END==")
+	})
 
 	ipfs, err := ipfslite.New(
 		ctx,
