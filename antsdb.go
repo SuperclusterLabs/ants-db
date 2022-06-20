@@ -85,7 +85,7 @@ func defaultOpts(a *AntsDB) {
 type AntsDB struct {
 	ctx             context.Context
 	cancel          context.CancelFunc
-	syncer          crdt.SessionDAGSyncer
+	syncer          crdt.SessionDAGService
 	pubsub          *pubsub.PubSub
 	storage         ds.Batching
 	namespace       ds.Key
