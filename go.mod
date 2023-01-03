@@ -1,4 +1,4 @@
-module github.com/plexsysio/ants-db
+module github.com/SuperclusterLabs/ants-db
 
 go 1.17
 
@@ -175,3 +175,5 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
+
+replace github.com/plexsysio/ants-db => github.com/SuperclusterLabs/ants-db latest
